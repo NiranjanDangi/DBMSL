@@ -1,0 +1,1369 @@
+﻿———————————————————————————————————————————————
+					        DBMSL Practical Preparation:
+———————————————————————————————————————————————
+                          					Group B Assignments :
+———————————————————————————————————————————————
+Assignment No 9:    MongoDB Queries: Design and Develop MongoDB Queries using CRUD    operations.(Use CRUD operations, SAVE method, logical operators etc.).
+
+MongoDB Connection command on Lab : mongo 10.10.12.248/te31419_db -u te31419 -p te31419
+———————————————————————————————————————————————
+1.Create Collection:
+———————————————————————————————————————————————
+db.createCollection("Student");
+———————————————————————————————————————————————
+2.Inserting Documents in Collection : (Also insert Embedded Documents):
+
+Inserting One Document : (Try adding city in schema as it would help you to update many documents )
+
+db.Student.insertOne({
+	rollNo : 31419,
+	name : "Niranjan",
+	marks : {
+		insem : 145,
+		endsem : 340
+	},
+	skills : [{name : "C++",rating : 9.5},{name : "Java",rating : 10}]
+});
+
+Inserting Many Documents :
+
+db.Student.insertMany([
+{
+	rollNo : 31406,
+	name : "Hashim",
+	marks : {
+		insem : 130,
+		endsem : 300
+	},
+	skills : [{name : "C++",rating : 9},{name : "Java",rating : 8}]
+
+},
+{
+
+	rollNo : 31417,
+	name : "Anish",
+	marks : {
+		insem : 134,
+		endsem : 300
+	},
+	skills : [{name : "C++",rating : 7},{name : "Java",rating : 6}]
+
+}
+]);
+
+———————————————————————————————————————————————
+2. Displaying documents inserted in Collection :
+
+db.Student.find();
+db.Student.find().pretty();
+———————————————————————————————————————————————
+3. Updating one document:
+
+db.Student.updateOne({
+	rollNo : 31419
+},
+{
+	$set:{
+	              name : "Niranjan Dangi"
+	}
+});
+
+When you update a document using field that does not match with the existing documents, it won’t get 
+Updated and it won’t be inserted as well.
+
+To make sure it gets inserted use upset : true (upsert : update as well as insert )
+
+db.Student.updateOne({
+	rollNo : 31409
+},
+{
+	$set:{
+	              name : "Rohan Dangi"
+	}
+},
+{
+	upsert : true
+});
+———————————————————————————————————————————————
+4. Updating Many documents:
+
+db.Student.updateMany({},
+{
+	$push: {
+		skills : { name : "Python", rating : 10}
+	}
+});
+
+Optional :
+
+db.Student.updateMany({},
+{
+	$pull: {
+		skills : { name : "Python", rating : 10}
+	}
+});
+
+———————————————————————————————————————————————
+5. Deleting a Document :
+	db.Student.deleteOne({rollNo : 31409});
+
+      Deleting whole Student Collection:
+	db.Student.drop(); //OP :true
+———————————————————————————————————————————————
+6. Logical Operators :
+
+						1.AND Operator : 
+
+db.Student.find({
+	
+	$and : [
+	        {"marks.insem" : { $gt : 132 }},
+	        {"marks.endsem" : { $gt : 325 }}
+	]
+});      // OP : Niranjans Record
+
+						2.OR Operator :
+
+db.Student.find({
+	$or : [
+	{"marks.insem" : {$gt : 132}},
+	{"marks.endsem" : {$gt : 325}}
+	]
+}); / / OP : Niranjans and Anish Record
+
+						3.NOT Operator:
+
+db.Student.find({
+	"marks.insem" : {$not    : {$lt: 132} }
+});      // OP : Hashim’s and Rohan’s record
+
+						4.NOR Operator :
+
+db.Student.find({
+	$nor : [
+	{"marks.insem" : {$gt : 132}},
+	{"marks.endsem" : {$gt : 325}}
+	]
+});    // OP :    Excluding Niranjans and Anish Record
+
+———————————————————————————————————————————————
+
+Save Command :
+
+db.Student.save(
+{
+	rollNo : 31420,
+	name : "Varad",
+	marks : {
+		insem : 120,
+		endsem : 280
+	},
+	skills : [{name : "C++",rating : 8},{name : "Java",rating : 9}]
+
+});      (It will give an error)
+Save command is deprecated now and instead of it, now insertOne is used. If
+Id specified then it updates the document else it inserts is.
+———————————————————————————————————————————————
+Extra Commands :
+
+1.Range Operator :
+
+db.Student.find({
+	"marks.endsem" : {$gte : 300, $lt : 320}
+}); // Hashim and Anish’s Record
+
+2.Skip and Limit Operator:
+
+db.Student.find().limit(2); //Niranjan’s and Hashim’s Record
+db.Student.find().skip(2); // Anish and Rohan’s Record
+
+3.All and In Operator : 	
+
+db.Student.find({
+	rollNo : {$in : [31419,31406]}
+});
+db.Student.find({
+	"skills.name" : {$all : ["Java","C++"]}
+});
+———————————————————————————————————————————————
+———————————————————————————————————————————————
+Assignment No 10:    MongoDB Aggregation and Indexing: 
+Design and Develop MongoDB Queries using aggregation and indexing with suitable example using MongoDB
+
+Creating Collection and inserting documents  in Schema :
+
+db.createCollection("Student");
+
+db.Student.insertMany([
+{
+	rollNo : 31419,
+	name : "Niranjan Dangi",
+	city : "Pune City",
+	dept : "Computer Engineering",
+	marks : {
+		insem :    145,
+		endsem : 340
+	},
+	skills : [{name : "C++",rating : 10},{name : "Java",rating : 10}]
+},
+{
+	rollNo : 31406,
+	name : "Hashim Babat",
+	city : "Pune City",
+	dept : "Computer Engineering",
+	marks : {
+		insem :    135,
+		endsem : 320
+	},
+	skills : [{name : "C++",rating : 9},{name : "Java",rating : 8}]
+},
+{
+	rollNo : 31417,
+	name : "Anish Dabhane",
+	city : "Amravati City",
+	dept : "Information Technology Engineering",
+	marks : {
+		insem :    125,
+		endsem : 300
+	},
+	skills : [{name : "C++",rating : 8},{name : "Java",rating : 7}]
+}
+]);
+
+Mistakes I am making : All the indices with 1 should be separated by commas
+and should be in one {} 
+
+//Creating Indexes :
+
+1.Simple Index :
+	db.Student.createIndex({name : 1});
+2.Compound Index:		
+	db.Student.createIndex({name : 1, dept : 1});
+3.Unique Index:
+	db.Student.createIndex({name : 1, city : 1},{unique : true});
+
+To show the indexes : db.Student.getIndexes();
+To drop the indexes : db.Student.dropIndex("name_1");
+To show the performance optimisation: db.Student.find({name : "Niranjan Dangi"}).explain("executionStats");
+———————————————————————————————————————————————
+Aggregation Operations:
+
+//Mistakes I am making : 1. $avg and $marks.insem in one {}
+//2. "$marks.insem " or endsem and $dept while grouping should be in ""
+3, Also add _id in count and ensure that there are no spaces and count has 
+Empty {} after $count
+4.Aggregate always comes in []
+5.Remember this in undwind:    $unwind : "$skills"
+
+1.Compute Average Insem and Endsem marks of each student:
+
+db.Student.aggregate([{
+	 
+	$group : {
+		_id : null, // for considering all students
+		avg_insem_marks : {$avg : "$marks.insem"},
+		avg_endsem_marks : {$avg : "$marks.endsem"},
+	}
+
+}]);
+
+2.Compute count of Students in each Department 
+
+db.Student.aggregate([{
+	 
+	$group : {
+		_id : "$dept",
+		count : { $count : {}}
+	}
+
+}]);
+
+
+3.Compute Average Insem and Endsem marks by department:
+
+db.Student.aggregate([{
+	 
+	$group : {
+		_id : "$dept", // for considering students of specific dept
+		avg_insem_marks : {$avg : "$marks.insem"},
+		avg_endsem_marks : {$avg : "$marks.endsem"},
+	}
+
+}]);
+
+4.Compute sum of insem and Endsem marks for each student belonging to the 
+Computer Engineering Department and determine the topper.
+
+db.Student.aggregate([
+{
+	$match : {
+	            dept : "Computer Engineering"
+	}
+},
+{
+	$project:{
+		name : 1,
+		rollNo : 1,
+		age : 1,
+		marks : {
+			$add : ["$marks.insem","$marks.endsem"]
+		}
+	}
+},
+{
+	$sort : { marks : -1}
+},
+{
+	$limit : 1
+}
+]);
+
+
+5.Using unwind for array of embedded documents.
+
+db.Student.aggregate([
+ {
+	$unwind : "$skills"
+ }
+]);
+———————————————————————————————————————————————
+———————————————————————————————————————————————
+Assignment No 11:    MongoDB Map-reduces operations: 
+Implement Map reduces operation with suitable example using MongoDB.
+
+Keep the schema as that of previous example: (Remember ASMM for operations)
+
+
+db.createCollection("Student");
+
+db.Student.insertMany([
+{
+	rollNo : 31419,
+	name : "Niranjan Dangi",
+	city : "Pune City",
+	dept : "Computer Engineering",
+	marks : {
+		insem :    145,
+		endsem : 340
+	},
+	skills : [{name : "C++",rating : 10},{name : "Java",rating : 10}]
+},
+{
+	rollNo : 31406,
+	name : "Hashim Babat",
+	city : "Pune City",
+	dept : "Computer Engineering",
+	marks : {
+		insem :    135,
+		endsem : 320
+	},
+	skills : [{name : "C++",rating : 9},{name : "Java",rating : 8}]
+},
+{
+	rollNo : 31417,
+	name : "Anish Dabhane",
+	city : "Amravati City",
+	dept : "Information Technology Engineering",
+	marks : {
+		insem :    125,
+		endsem : 300
+	},
+	skills : [{name : "C++",rating : 8},{name : "Java",rating : 7}]
+}
+]);
+
+———————————————————————————————————————————————
+
+
+//It will show results according to grouping of departments
+
+To see the results : type the command :
+db.insem_avgMarks.find().pretty(); // and similarly change for other commands (not Student here remember for further )
+// Map,reduce and out should not be there in object remember that
+
+					1.Average :
+
+var map = function() { emit(this.dept,this.marks.insem) }    
+var reduce = function(dept,marks){ return Array.avg(marks); } 
+
+db.Student.mapReduce(map,reduce,{ out : "insem_avgMarks"});
+
+					2.Sum:
+
+db.Student.mapReduce(
+function(){
+	emit(this.dept,this.marks.insem)
+},
+function(dept,marks)
+{
+	return Array.sum(marks);
+}
+,
+{ 
+out : "insem_sumMarks"
+});
+
+					3.Min:
+
+db.Student.mapReduce(
+function(){
+	emit(this.dept,this.marks.insem)
+},
+function(dept,marks)
+{
+	return Math.min.apply(null,marks);
+}
+,
+{ 
+out : "insem_minMarks"
+});
+
+					4.Max:
+
+db.Student.mapReduce(
+function(){
+	emit(this.dept,this.marks.insem)
+},
+function(dept,marks)
+{
+	return Math.max.apply(null,marks);
+}
+,
+{ 
+out : "insem_maxMarks"
+});
+———————————————————————————————————————————————
+Assignment No 7:    Database Trigger (All Types: Row level and Statement level triggers, Before and After Triggers). 
+Write a database trigger on Library table. The System should keep track of the records that are being updated or deleted. T
+he old value of updated or deleted records should be added in Library_Audit table. 
+Note: Instructor will Frame the problem statement for writing PL/ SQL block for
+ all types of Triggers in line with above statement.
+———————————————————————————————————————————————
+Connecting with mysql on my Mac : mysql -u root -p 
+Password : Niranjan@2004
+
+mysql -h 10.10.13.97 -u te31419 -p      
+Password : te31419 
+Then, use te31419_db
+
+Row Level triggers run for each row affected by the particular operation
+Statement Level triggers fires once for each SQL Statement executed irrespective of 
+number of rows.	
+———————————————————————————————————————————————
+(Remember INP ):
+auto_increment : remember always
+Don’t use unique in any form in audit
+
+create table books
+(
+	id int auto_increment,
+	name varchar(20) not null unique,
+	price int not null,
+	primary key(id)
+); 
+
+create table audit
+(
+	id int not null,
+	name varchar(20) not null,
+	price int not null,
+	ts datetime default current_timestamp()
+);
+
+Insert into books(name,price) values('DBMS',1000),('TOC',2000),('HCI', 3000),('CNS',4000),('SPOS',5000);
+
+create trigger trigger_book_update
+before update on books
+for each row
+insert into audit values(old.id, old.name, old.price, current_timestamp());
+
+create trigger trigger_book_delete
+before delete on books
+for each row
+insert into audit values(old.id, old.name, old.price, current_timestamp());
+
+UPDATE books set price = 4500 where name = 'CNS';
+DELETE from books where name = 'CNS';
+
+———————————————————————————————————————————————
+Assignment No 6:    Cursors: (All types: Implicit, Explicit, Cursor FOR Loop, Parameterised Cursor) 
+Write a PL/SQL block of code using parameterised Cursor, that will merge the data available in the newly created table N_EmpId    with the data available in the table O_EmpId. If the data in the first table already exist in the second table then that data should be skipped.
+———————————————————————————————————————————————
+
+create table old_emp
+(
+	emp_id int primary key,
+	emp_name varchar(20),
+	emp_salary float
+); 
+
+
+create table new_emp
+(
+	emp_id int primary key,
+	emp_name varchar(20),
+	emp_salary float
+); 
+
+insert into old_emp values(1,'Niranjan',10000); 
+insert into old_emp values(2,'Anish',9000); 
+insert into old_emp values(3,'Hashim',8000); 
+insert into old_emp values(4,'Ketan',7000); 
+
+Insert into new_emp values(1,'Niranjan',10000); 
+
+———————————————————————————————————————————————
+
+delimiter $$ 
+
+
+//Checking for Parameterised cursor :
+
+CREATE PROCEDURE copy_emp_data(e_id INT)
+BEGIN
+
+DECLARE v_emp_id INT;
+DECLARE v_emp_name varchar(20);
+DECLARE v_emp_salary FLOAT;
+
+DECLARE done INT default FALSE;
+DECLARE cur CURSOR for select emp_id,emp_name,emp_salary FROM old_emp WHERE emp_id = e_id; //Remember “for” here
+// Also remember that it is DECLARE cur CURSOR NOT “DECLARE CURSOR cur”
+DECLARE CONTINUE HANDLER FOR NOT FOUND SET done = TRUE;
+
+OPEN cur;
+
+read_data : LOOP
+	FETCH cur INTO v_emp_id,v_emp_name,v_emp_salary;
+		IF done THEN
+		LEAVE read_data;
+		END IF;
+
+	IF NOT EXISTS (select 1 from new_emp WHERE emp_id = v_emp_id) THEN
+	insert into new_emp (emp_id,emp_name,emp_salary) values
+	(v_emp_id,v_emp_name,v_emp_salary);
+	END IF;
+	
+	END LOOP;
+	CLOSE cur;
+END $$
+
+delimiter ;
+
+Now when you call copy_emp_data(with Niranjan’s id) it won’t enter it into 
+new_emp as it is already inserted while others will get inserted easily into new_emp
+
+———————————————————————————————————————————————
+Assignment No 5:    Named PL/SQL Block: PL/SQL Stored Procedure and Stored Function. 
+Write a Stored Procedure namely proc_Grade for the categorisation of student. 
+If marks scored by students in examination is <=1500 and marks>=990 then student will be placed in distinction category 
+if marks scored are between 989 and900 category is first class
+if marks899and 825 category is Higher Second Class. 
+Write a PL/ SQLblock to use procedure created with above requirement. Stud_Marks(name, total_marks) Result(Roll,Name, Class)
+———————————————————————————————————————————————
+
+create table Stud_marks
+(
+	roll_no int primary key,
+	name varchar(20),
+	total_marks int
+); 
+
+create table Result
+(
+	roll_no int,
+	name varchar(20),
+	class varchar(20),
+	foreign key(roll_no) references Stud_marks(roll_no)
+); 
+
+insert into Stud_marks values(1,'Niranjan',1400),(2,'Rushikesh',945),(3,'Rohan',845),(4,'Omkar',640);
+delimiter $$ 
+
+———————————————————————————————————————
+
+				This is PROCEDURE 
+//ELSEIF has no space and END IF has space, Also ensure semicolon after every statement
+CREATE PROCEDURE proc_Grade(r_no INT)
+BEGIN
+DECLARE name varchar(20);
+DECLARE marks float;
+DECLARE category varchar(20);
+DECLARE code INT DEFAULT 0;
+
+SELECT Stud_Marks.name,Stud_Marks.total_marks INTO name,marks FROM Stud_Marks WHERE Stud_Marks.roll_no = r_no;
+
+IF marks is NULL THEN
+SELECT 'Invalid Roll Number    !! ' As Message;
+SET code = 1;
+ELSEIF marks <= 0 THEN
+SET code = 1;
+SELECT 'Invalid Marks !!' As Message;
+ELSE
+	IF marks >= 990 AND marks <= 1500 THEN
+	SET category = 'DISTINCTION';
+	ELSEIF marks >= 900 AND marks <= 989 THEN
+	SET category = 'First Class';
+	ELSEIF marks >= 825 AND marks <= 899 THEN
+	SET category = 'Higher Second Class';
+	ELSE SET category = 'FAIL';
+	END IF;
+
+	IF category is NOT NULL THEN
+	insert into Result values(r_no,name,category);
+	SELECT 'Result inserted into the table!! ' As Message;
+	END IF;
+END IF;
+
+IF code = 1 THEN
+SELECT 'Error occured while processing !! ' As Message;
+END IF;
+END
+$$
+
+delimiter ; 
+
+CALL proc_Grade();
+select * from Result; 
+———————————————————————————————————————————————
+				This is FUNCTION
+
+CREATE FUNCTION func_Grade(r_no INT) RETURNS VARCHAR(50)
+DETERMINISTIC
+READS SQL DATA
+BEGIN
+DECLARE name varchar(20);
+DECLARE category varchar(20);
+DECLARE marks INT;
+DECLARE code INT default 0;
+DECLARE returnMsg varchar(50);
+
+SELECT Stud_marks.name, Stud_marks.total_marks INTO name,marks FROM Stud_marks
+WHERE Stud_marks.roll_no = r_no;
+
+IF marks is NULL THEN
+	SET returnMsg =    'Invalid Roll Number !!' ;
+	SET code = 1;
+ELSEIF marks <0 THEN
+	SET returnMsg = 'Invalid Marks !!' ;
+	SET code = 1;
+ELSE
+
+	IF marks >= 990 AND marks <= 1500 THEN
+		SET category = 'Distinction';
+	ELSEIF marks >= 900 AND marks <= 989 THEN
+		SET category = 'First Class';
+	ELSEIF marks >= 825 AND marks <= 899 THEN
+		SET category = ' Higher Second Class';
+	ELSE SET category = 'Fail';
+	END IF;
+
+IF category is NOT NULL THEN 
+Insert into Result (roll_no,name,class) values(r_no,name,category);
+SET returnMsg =    'Result inserted !! ';
+END IF;
+
+END IF;
+
+IF code = 1 THEN
+SET returnMsg =    'An error occurred while processing';
+END IF;
+
+RETURN returnMsg;
+
+END;
+$$
+ 
+For calling : SELECT func_Grade(1);
+———————————————————————————————————————————————
+
+———————————————————————————————————————————————
+Assignment No 4:    Write a PL/SQL code block to calculate the area of a circle for a value of radius varying from 5 to 9. 
+Store the radius and the corresponding values of calculated area in an empty table named areas, consisting of two columns, 
+radius and area.
+———————————————————————————————————————————————
+create table Areas
+(
+	radius int not null,
+	area double not null
+); 
+
+delimiter $$ 
+
+CREATE PROCEDURE calculate_area()
+BEGIN
+DECLARE new_radius INT;
+DECLARE new_area DOUBLE;
+DECLARE pi DOUBLE;
+
+SET pi = 3.14159;
+SET new_radius = 5;
+
+WHILE new_radius <= 9 DO
+SET new_area = pi * POW(new_radius,2);
+insert into Areas values(new_radius,new_area); 
+SET new_radius = new_radius + 1;
+END WHILE;
+
+END;
+$$
+
+delimiter ;
+
+CALL calculate_area; 
+
+select * from Areas 
+———————————————————————————————————————————————
+Assignment No 4 (Part 2):    Borrower(Roll_no, Name, DateofIssue, NameofBook, Status) 
+				Fine(Roll_no,Date,Amt) 
+1.Accept roll_no & name of book from user.
+ 2.Check the number of days (from date of issue), if days are between 15 to 30 then 
+3.fine amount will be Rs 5per day. 
+4.If no. of days>30, per day fine will be Rs 50 per day & for days less than 30, Rs. 5 per day. 
+5.After submitting the book, status will change from I to R. If condition of fine is true, then details will be stored
+ into fine table
+———————————————————————————————————————————————
+
+create table Borrower
+(
+	Roll_no int primary key,
+	Name varchar(20),
+	DateOfIssue date,
+	NameofBook varchar(20),
+	Status char
+); 
+
+create table Fine
+(
+	Roll_no int,
+	Date date,
+	Amt float,
+	foreign key(Roll_no) references Borrower(Roll_no)
+); 
+
+insert into Borrower values(1,'Niranjan','2024-10-29','The Alchemist','I'); 
+insert into Borrower values(2,'Rohan','2024-10-14','Harry Potter','I'); 
+insert into Borrower values(3,'Vedant','2024-09-27','Wings of Fire','I'); 
+———————————————————————————————————————————————
+delimiter $$
+
+CREATE PROCEDURE calc_fine_amt(r_no INT)
+BEGIN
+DECLARE days INT;
+DECLARE fine INT;
+DECLARE code INT;
+DECLARE issueDate DATE;
+
+SELECT Borrower.DateofIssue into issueDate FROM Borrower WHERE Borrower.Roll_no = r_no;
+SET days = DATEDIFF(CURDATE(),issueDate);
+
+IF days >= 15 AND days <= 30 THEN
+SET fine = 5 * (days - 15);
+ELSEIF days > 30 THEN
+SET fine = (5 * 15) + (50 * (days - 30));
+ELSE SET fine = 0;
+END IF;
+
+BEGIN
+DECLARE EXIT HANDLER FOR 1452 SET code = 1;
+insert into Fine values(r_no,CURDATE(),fine);
+UPDATE Borrower SET Borrower.status = 'R' WHERE Borrower.Roll_no = r_no;
+END;
+
+IF code = 1 THEN
+SELECT 'Inavlid Roll Number !! ' AS Message;
+ELSE
+SELECT 'FIne Amount inserted in table !! ' AS Message;
+END IF;
+
+END;
+$$
+
+delimiter ;        ((Remember : 75 + 50) for Final Calculation)
+———————————————————————————————————————————————
+———————————————————————————————————————————————
+Assignment No 2 :    
+ Create following tables in MYSQL
+● Employee( Emp_id, Dept_id, Emp_fname, Emp_lname, Emp_Position, Emp_salary,Emp_JoinDate) 
+● Dept ( Dept_id, Dept_name,Dept_location) 
+● Project( Proj_id,Dept_id ,Proj_Name,Proj_Location,Proj_cost,Proj_year) 
+Create view (simple), index, sequence and synonym based on above tables. 
+Note: Use referential integrity constraints while creating tables with on delete cascade options
+
+create table Dept
+(
+	Dept_id int primary key,
+	Dept_location varchar(20),
+	Dept_name varchar(20)
+); 
+
+create table Employee
+(
+	Emp_id int primary key,
+	Dept_id int,
+	Emp_fname varchar(20),
+	Emp_lname varchar(20),
+	Emp_Position varchar(20),
+	Emp_salary int,
+	Emp_JoinDate date,
+	foreign key(Dept_id) references Dept(Dept_id) on delete cascade
+); 
+
+create table Project
+(
+	Proj_id int,
+	Dept_id int,
+	Proj_name varchar(20),
+	Proj_Location varchar(20),
+	Proj_cost int,
+	Proj_year year,
+	foreign key(Dept_id) references Dept(Dept_id) on delete cascade
+); 
+
+CREATE VIEW Emp_view AS SELECT Emp_id,Emp_fname,Emp_salary FROM Employee;
+
+CREATE INDEX ind_1 ON Employee(Emp_id);
+
+CREATE VIEW Emp_Syn AS SELECT * from Employee;
+CREATE VIEW Dept_Syn AS SELECT * from Dept;
+CREATE VIEW Project_Syn AS SELECT * from Project;
+
+ALTER TABLE Employee MODIFY COLUMN Emp_id INT auto_increment;
+
+———————————————————————————————————————————————
+(While adding values keep one employee join date before 1985)
+(See Dept_name and Dept_location carefully)
+
+1. Insert at least 10 records in the Employee table and insert other tables accordingly. 
+
+insert into Dept values(1, 'Pune','Computer');
+insert into Dept values(2, 'Mumbai','IT');
+insert into Dept values(3, 'Banglore','HR');
+insert into Dept values(4, 'Delhi','Finance');
+insert into Dept values(5, 'Hyderabad','Marketing');
+
+insert into Employee(Dept_id, Emp_fname, Emp_lname, Emp_Position, Emp_salary,Emp_JoinDate) values(1,'Niranjan','Dangi','Intern',30000,'2023-07-01');
+insert into Employee(Dept_id, Emp_fname, Emp_lname, Emp_Position, Emp_salary,Emp_JoinDate) values(1,'Rohan','Dangi','Junior Developer',40000,'2023-08-01');
+insert into Employee(Dept_id, Emp_fname, Emp_lname, Emp_Position, Emp_salary,Emp_JoinDate) values(2,'Rushikesh','Dangi','Developer',50000,'2023-09-01');
+insert into Employee(Dept_id, Emp_fname, Emp_lname, Emp_Position, Emp_salary,Emp_JoinDate) values(2,'Omkar','Dangi','Senior Developer',60000,'2023-10-01');
+insert into Employee(Dept_id, Emp_fname, Emp_lname, Emp_Position, Emp_salary,Emp_JoinDate) values(3,'Vedant','Dabi','Lead Developer',70000,'2023-11-01');
+insert into Employee(Dept_id, Emp_fname, Emp_lname, Emp_Position, Emp_salary,Emp_JoinDate) values(3,'Vaibhavi','Dabi','Manager',80000,'2023-12-01');
+insert into Employee(Dept_id, Emp_fname, Emp_lname, Emp_Position, Emp_salary,Emp_JoinDate) values(4,'Rounak','Chatterjee','Senior Manager',90000,'2024-01-01');
+insert into Employee(Dept_id, Emp_fname, Emp_lname, Emp_Position, Emp_salary,Emp_JoinDate) values(4,'Hashim','Babat','Director',100000,'2024-02-01');
+insert into Employee(Dept_id, Emp_fname, Emp_lname, Emp_Position, Emp_salary,Emp_JoinDate) values(5,'Ketan','Bajaj','VP',110000,'2024-03-01');
+insert into Employee(Dept_id, Emp_fname, Emp_lname, Emp_Position, Emp_salary,Emp_JoinDate) values(5,'Anish','Dabhane','CTO',120000,'2024-04-01');
+
+
+
+insert into Project values(1,1,'Alpha','Pune',150000,'2004');
+insert into Project values(2,1,'Beta','Mumbai',250000,'2005');
+insert into Project values(3,2,'Gamma','Pune',300000,'2006');
+insert into Project values(4,2,'Delta','Delhi',350000,'2007');
+insert into Project values(5,3,'Epsilon','Banglore',400000,'2008');
+insert into Project values(6,3,'Zeta','Hyderabad',450000,'2009');
+insert into Project values(7,4,'Eta','Delhi',500000,'2010');
+insert into Project values(8,4,'Theta','Mumbai',550000,'2011');
+insert into Project values(9,5,'Iotta','Pune',600000,'2012');
+insert into Project values(10,5,'Kappa','Hyderabad',650000,'2013');
+———————————————————————————————————————————————
+2. Display all Employee details with Department ‘Computer’ and ‘IT’ and Employee first name 
+starting with 'p' or 'h'. 
+
+SELECT * FROM    Employee e INNER JOIN Dept d ON e.Dept_id = d.Dept_id
+WHERE d.Dept_name IN ('Computer','IT') AND e. Emp_fname like 'P%' OR e.Emp_fname like 'H%';
+———————————————————————————————————————————————
+3. lists the number of different Employee Positions. 
+
+SELECT COUNT(DISTINCT Emp_Position) FROM Employee;
+———————————————————————————————————————————————
+4. Give 10% increase in Salary of the Employee whose joining year is before 1985. 
+
+UPDATE Employee SET Emp_JoinDate = '1970-07-01' WHERE Emp_id = 2;
+UPDATE Employee SET Emp_salary = (Emp_salary * 1.10) WHERE YEAR(Emp_JoinDate) < 1985;
+———————————————————————————————————————————————
+5. Delete Department details which location is ‘Mumbai’. 
+
+DELETE FROM Dept WHERE Dept_Location = 'Mumbai';
+———————————————————————————————————————————————
+6. Find the names of Projects with location ‘pune’ . 
+
+SELECT * FROM Project WHERE Proj_Location = 'Pune';
+———————————————————————————————————————————————
+7. Find the project having cost in between 10000 to 50000. 
+
+UPDATE Project SET Proj_cost = 45000 WHERE Proj_id = 2; 
+SELECT * FROM Project WHERE Proj_cost > 10000 AND Proj_cost < 50000;
+———————————————————————————————————————————————
+8. Find the project having maximum price and find average of Project cost 
+
+SELECT * from Project WHERE Proj_cost    = (SELECT MAX(Proj_cost) FROM Project);
+SELECT AVG(Proj_cost) AS Average_cost FROM Project;
+———————————————————————————————————————————————
+9. Display all employees with Emp _id and Emp name in decreasing order of Emp_lname
+
+SELECT Emp_id, concat(Emp_fname, ' ', Emp_lname ) AS Emp_name FROM Employee ORDER By Emp_lname DESC;
+———————————————————————————————————————————————
+
+10. Display Proj_name,Proj_location ,Proj_cost of all project started in 2004,2005,2007
+
+SELECT Proj_name,Proj_location,Proj_cost FROM Project WHERE Proj_year IN (2004,2005,2007);
+
+———————————————————————————————————————————————
+
+Assignment No 8 :
+Write a program to implement MySQL/Oracle database connectivity with any frontend language to implement 
+Database navigation operations (add,delete,edit etc)
+
+Remember this string for exam :
+
+private static Connection getConnection() throws SQLException {
+        return DriverManager.getConnection("jdbc:mysql://10.10.13.97:3306/te31419_db", "te31419", "te31419");
+}
+———————————————————————————————————————————————
+Mistakes :
+1. st.executeUpdate();
+2. In Update, see setInt and setString accordingly.
+
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.sql.*;
+
+public class Demo {
+        
+        private static Connection getConnection() throws SQLException {
+                return DriverManager.getConnection("jdbc:mysql://localhost:3306/niranjan", "root", "Niranjan@2004");
+        }
+
+
+        private static void createTable() {
+                String sql = "CREATE TABLE IF NOT EXISTS STUDENT (id INT PRIMARY KEY, name VARCHAR(20))";
+                try (Connection conn = getConnection(); Statement st = conn.createStatement()) {
+                        st.executeUpdate(sql);
+                        System.out.println("Table Created Successfully");
+                } catch (SQLException e) {
+                        System.out.println("Error creating table: " + e.getMessage());
+                }
+        }
+
+        private static void insertRecord(int id, String name) {
+                String sql = "INSERT INTO STUDENT (id, name) VALUES (?, ?)";
+                try (Connection conn = getConnection(); PreparedStatement pst = conn.prepareStatement(sql)) {
+                        pst.setInt(1, id);
+                        pst.setString(2, name);
+                        pst.executeUpdate();
+                        JOptionPane.showMessageDialog(null, "Insertion Successful");
+                } catch (SQLException e) {
+                        JOptionPane.showMessageDialog(null, "Error inserting record: " + e.getMessage());
+                }
+        }
+
+        private static void updateRecord(int id, String name) {
+                String sql = "UPDATE STUDENT SET name = ? WHERE id = ?";
+                try (Connection conn = getConnection(); PreparedStatement pst = conn.prepareStatement(sql)) {
+                        pst.setString(1, name);
+                        pst.setInt(2, id);
+                        pst.executeUpdate();
+                        JOptionPane.showMessageDialog(null, "Update Successful");
+                } catch (SQLException e) {
+                        JOptionPane.showMessageDialog(null, "Error updating record: " + e.getMessage());
+                }
+        }
+
+        private static void deleteRecord(int id) {
+                String sql = "DELETE FROM STUDENT WHERE id = ?";
+                try (Connection conn = getConnection(); PreparedStatement pst = conn.prepareStatement(sql)) {
+                        pst.setInt(1, id);
+                        pst.executeUpdate();
+                        JOptionPane.showMessageDialog(null, "Record Deleted");
+                } catch (SQLException e) {
+                        JOptionPane.showMessageDialog(null, "Error deleting record: " + e.getMessage());
+                }
+        }
+
+        private static void displayRecords() {
+                String sql = "SELECT * FROM STUDENT";
+                try (Connection conn = getConnection(); Statement st = conn.createStatement(); ResultSet rs = st.executeQuery(sql)) {
+                        JTextArea textArea = new JTextArea();
+                        textArea.setEditable(false);
+                        textArea.append("ID\tName\n");
+                        while (rs.next()) {
+                                textArea.append(rs.getInt(1) + "\t" + rs.getString(2) + "\n");
+                        }
+                        JOptionPane.showMessageDialog(null, new JScrollPane(textArea), "Student Records", JOptionPane.INFORMATION_MESSAGE);
+                } catch (SQLException e) {
+                        JOptionPane.showMessageDialog(null, "Error retrieving records: " + e.getMessage());
+                }
+        }
+
+        private static JPanel createPanel() {
+                JPanel panel = new JPanel();
+                panel.setLayout(new GridLayout(6, 2, 10, 10));
+
+                JTextField idField = new JTextField();
+                JTextField nameField = new JTextField();
+
+                JButton insertButton = new JButton("Insert");
+                JButton updateButton = new JButton("Update");
+                JButton deleteButton = new JButton("Delete");
+                JButton viewButton = new JButton("View Records");
+
+                insertButton.addActionListener(e -> {
+                        try {
+                                int id = Integer.parseInt(idField.getText());
+                                String name = nameField.getText();
+                                insertRecord(id, name);
+                        } catch (NumberFormatException ex) {
+                                JOptionPane.showMessageDialog(null, "Invalid ID format");
+                        }
+                });
+
+                updateButton.addActionListener(e -> {
+                        try {
+                                int id = Integer.parseInt(idField.getText());
+                                String name = nameField.getText();
+                                updateRecord(id, name);
+                        } catch (NumberFormatException ex) {
+                                JOptionPane.showMessageDialog(null, "Invalid ID format");
+                        }
+                });
+
+                deleteButton.addActionListener(e -> {
+                        try {
+                                int id = Integer.parseInt(idField.getText());
+                                deleteRecord(id);
+                        } catch (NumberFormatException ex) {
+                                JOptionPane.showMessageDialog(null, "Invalid ID format");
+                        }
+                });
+
+                viewButton.addActionListener(e -> displayRecords());
+
+                panel.add(new JLabel("ID:"));
+                panel.add(idField);
+                panel.add(new JLabel("Name:"));
+                panel.add(nameField);
+                panel.add(insertButton);
+                panel.add(updateButton);
+                panel.add(deleteButton);
+                panel.add(viewButton);
+
+                return panel;
+        }
+
+        public static void main(String[] args) {
+                createTable(); // Create table at the beginning
+
+                JFrame frame = new JFrame("Student Database Operations");
+                frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+                frame.setSize(400, 300);
+                frame.setLayout(new BorderLayout());
+
+                JPanel panel = createPanel();
+                frame.add(panel, BorderLayout.CENTER);
+
+                frame.setVisible(true);
+        }
+}
+
+———————————————————————————————————————————————
+Assignement No 12:
+———————————————————————————————————————————————
+Problem Statement : Database Connectivity : Write a program to implement MongoDB database 
+Connectivity with Any front end language to implement database navigation operations (add, delete,edit) etc
+———————————————————————————————————————————————
+Also remember the dependency :
+
+    <dependencies>
+        <dependency>
+                <groupId>org.mongodb</groupId>
+                <artifactId>mongo-java-driver</artifactId>
+                <version>3.8.1</version>
+        </dependency>
+    </dependencies>
+
+
+———————————————————————————————————————————————
+
+
+import com.mongodb.MongoClient;
+import com.mongodb.MongoClientURI;
+import com.mongodb.client.MongoCollection;
+import com.mongodb.client.MongoDatabase;
+import org.bson.Document;
+import java.util.Scanner;
+
+public class Main {
+	private static MongoClient mongoClient;
+	private static MongoDatabase database;
+	private static MongoCollection<Document> collection;
+	private static Scanner scanner;
+	
+	public static void main(String[] args) {
+		mongoClient = new MongoClient(new MongoClientURI("mongodb://localhost:27017"));
+		database = mongoClient.getDatabase("myDatabase");
+		collection = database.getCollection("myCollection");
+		scanner = new Scanner(System.in);
+		
+		Boolean running = true;
+		int ch;
+		
+		while(running) {
+			System.out.println("Enter your choice : ");
+			System.out.println("1-Insert a Document");
+			System.out.println("2-Update a Document");
+			System.out.println("3-Find a Document");
+			System.out.println("4-Delete a Document");
+			System.out.println("5-Display all Documents");
+			System.out.println("6-Exit");
+			ch = scanner.nextInt();
+			scanner.nextLine();
+			
+			switch(ch) {
+			case 1:
+				insertDocument();
+				break;
+			case 2:
+				updateDocument();
+				break;
+			case 3:
+				findDocument();
+				break;
+			case 4:
+				deleteDocument();
+				break;
+			case 5:
+				displayDocuments();
+				break;
+			case 6:
+				running = false;
+				break;
+			}
+		}
+		
+		mongoClient.close();
+		scanner.close();
+	}
+	
+	private static void insertDocument()
+	{
+		System.out.print("\nLet's add a New Document : \n");
+		
+		System.out.print("Enter Age : ");
+		int age = scanner.nextInt();
+		scanner.nextLine(); //imp
+		
+		System.out.print("Enter Name : ");
+		String name = scanner.nextLine();
+		
+		
+		System.out.print("Enter City");
+		String city = scanner.nextLine();
+		
+		Document doc = new Document("name",name).append("age", age).append("city", city);
+		collection.insertOne(doc);
+		System.out.println("Document Inserted !!");
+		
+	}
+	
+	private static void updateDocument()
+	{
+		System.out.print("\nEnter name to update document");
+		String name = scanner.nextLine();
+		Document result = collection.find(new Document("name",name)).first();
+		if(result != null) {
+			System.out.print("Enter new Age : (Current : " + result.getInteger("age") + " );");
+			int newAge = scanner.nextInt();
+			scanner.nextLine();
+			System.out.print("Enter new City : (Current : " + result.getString("city") + " );");
+			String newCity = scanner.nextLine();
+			
+			Document doc = new Document("name",name).append("age", newAge).append("city", newCity);
+			collection.replaceOne(new Document("name",name), doc);
+			System.out.println("Record updated !! ");
+		}
+		else {
+			System.out.println("Record not found!!");
+		}
+
+	}
+	
+	private static void findDocument()
+	{
+		System.out.print("\nEnter name to find");
+		String name = scanner.nextLine();
+		Document result = collection.find(new Document("name",name)).first();
+		if(result != null) {
+			System.out.println("Record found : " + result.toJson());
+		}
+		else {
+			System.out.println("Record not found!!");
+		}
+		
+	}
+		
+	
+	private static void deleteDocument()
+	{
+		System.out.print("\nEnter name to delete");
+		String name = scanner.nextLine();
+		Document result = collection.findOneAndDelete(new Document("name",name));
+		if(result != null) {
+			System.out.println("Record deleted : " + result.toJson());
+		}
+		else {
+			System.out.println("Error deleting record!!");
+		}
+		
+	}
+	
+	private static void displayDocuments()
+	{
+		System.out.println("Displaying all records : ");
+		for(Document doc : collection.find()) {
+			System.out.println("Record : " + doc.toJson());
+		}
+		
+	}
+
+}
+
+———————————————————————————————————————————————
+Assignment No 1: ER diagram
+———————————————————————————————————————————————
+See ER diagram of MicroProject and draw it.
+———————————————————————————————————————————————
+
+———————————————————————————————————————————————
+Assignment No 3: 
+● Employee( Emp_id, Dept_id, Emp_fname, Emp_lname, Emp_Position, Emp_salary,Emp_JoinDate) 
+● Dept ( Dept_id, Dept_name,location) 
+● Project( Proj_id,Dept_id ,Proj_Name,Proj_Location,Proj_cost,Proj_year) 
+———————————————————————————————————————————————
+Use the tables created in assignment no 2 and execute the following queries: 
+
+ 	
+1. Find Employee details and Department details using NATURAL JOIN. 
+2. Find the emp_fname,Emp_position,location,Emp_JoinDate who have same Dept id. 
+3. Find the Employee details ,Proj_id,Project cost who does not have Project location as ‘Hyderabad’. 
+4. Find Department Name ,employee name, Emp_position for which project year is 2020, 
+5. Display emp_position,D_name who have Project cost >30000 
+6. Find the names of all the Projects that started in the year 2015. 
+7. List the Dept_name having no_of_emp=10 
+8.Display the total number of employee who have joined any project before 2009 
+9. Create a view showing the employee and Department details. 
+10. Perform Manipulation on simple view-Insert, update, delete, drop view.
+
+create table Dept
+(
+	Dept_id int primary key,
+	Dept_name varchar(20),
+	location varchar(20)
+);
+
+insert into Dept values(1,'Computer','Pune');
+insert into Dept values(2,'IT','Mumbai');
+insert into Dept values(3,'HR','Banglore');
+insert into Dept values(4,'Finance','Hyderabad');
+insert into Dept values(5,'Marketing','Delhi');
+
+create table Employee
+(
+	Emp_id int primary key,
+	Dept_id int,
+	Emp_fname varchar(20),
+	Emp_lname varchar(20),
+	Emp_Position varchar(20),
+	Emp_salary int,
+	Emp_JoinDate date,
+	foreign key(Dept_id) references Dept(Dept_id) on delete cascade
+);
+
+insert into Employee values(1,1,'Niranjan','Dangi','Intern',30000,'2023-07-01');
+insert into Employee values(2,1,'Rohan','Dangi','Junior Developer',40000,'2023-08-01');
+insert into Employee values(3,2,'Rushikesh','Dangi','Developer',50000,'2023-09-01');
+insert into Employee values(4,2,'Omkar','Dangi','Senior Developer',60000,'2023-10-01');
+insert into Employee values(5,3,'Vedant','Dabi','Lead Developer',70000,'2023-11-01');
+insert into Employee values(6,3,'Vaibhavi','Dabi','Manager',80000,'2023-12-01');
+insert into Employee values(7,4,'Rounak','Chatterjee','Senior Manager',90000,'2024-01-01');
+insert into Employee values(8,4,'Hashim','Babat','Director',100000,'2024-02-01');
+insert into Employee values(9,5,'Ketan','Bajaj','VP',110000,'2024-03-01');
+insert into Employee values(10,5,'Anish','Dabhane','CTO',120000,'2024-04-01');
+
+
+create table Project
+(
+	Proj_id int primary key,
+	Dept_id int,
+	Proj_Name varchar(20),
+	Proj_Location varchar(20),
+	Proj_cost int,
+	Proj_year year,
+	foreign key(Dept_id) references Dept(Dept_id) on delete cascade
+);
+
+insert into Project values(1,1,'Alpha','Pune',150000,'2004');
+insert into Project values(2,1,'Beta','Mumbai',250000,'2005');
+insert into Project values(3,2,'Gamma','Pune',300000,'2006');
+insert into Project values(4,2,'Delta','Delhi',350000,'2007');
+insert into Project values(5,3,'Epsilon','Banglore',400000,'2008');
+insert into Project values(6,3,'Zeta','Hyderabad',450000,'2009');
+insert into Project values(7,4,'Eta','Delhi',500000,'2010');
+insert into Project values(8,4,'Theta','Mumbai',550000,'2011');
+insert into Project values(9,5,'Iota','Pune',600000,'2012');
+insert into Project values(10,5,'Kappa','Hyderabad',650000,'2013');
+
+———————————————————————————————————————————————
+
+1. Find Employee details and Department details using NATURAL JOIN. 
+SELECT * FROM Employee NATURAL JOIN Dept;
+———————————————————————————————————————————————
+
+———————————————————————————————————————————————
+2. Find the emp_fname,Emp_position,location,Emp_JoinDate who have same Dept id. 
+SELECT e.Emp_fname,e.Emp_position,d.location,e.Emp_JoinDate FROM Employee e INNER JOIN Dept d ON e.Dept_id = d.Dept_id;
+
+/*
+Egs : insert into Dept values(6,'Sales','Noida');
+SELECT e.Emp_fname,e.Emp_position,d.location,e.Emp_JoinDate FROM Employee e LEFT JOIN Dept d ON e.Dept_id = d.Dept_id;
+*/
+———————————————————————————————————————————————
+3. Find the Employee details ,Proj_id,Project cost who does not have Project location as ‘Hyderabad’. 
+
+	SELECT e.*,p.Proj_id,p.Proj_cost FROM Employee e INNER JOIN Project p ON e.Dept_id = p.Dept_id WHERE Proj_Location <> 'Hyderabad';
+———————————————————————————————————————————————
+4. Find Department Name ,employee name, Emp_position for which project year is 2020, 
+
+UPDATE Project SET Proj_year = 2020 WHERE Proj_id = 10;
+SELECT d.Dept_name,e.Emp_fname,e.Emp_lname,e.Emp_Position FROM Employee e INNER JOIN Dept d ON e.Dept_id = d.Dept_id INNER JOIN Project p ON e.Dept_id = p.Dept_id WHERE p.Proj_year = 2020; 
+———————————————————————————————————————————————
+5. Display emp_position,D_name who have Project cost >30000 
+
+SELECT DISTINCT e.Emp_Position,d.Dept_name FROM Employee e INNER JOIN Dept d ON e.Dept_id = d.Dept_id INNER JOIN Project p ON e.Dept_id = p.Dept_id WHERE p.Proj_cost > 30000;
+———————————————————————————————————————————————
+6. Find the names of all the Projects that started in the year 2015. 
+
+UPDATE Project SET Proj_year = 2015 WHERE Proj_id = 10;
+SELECT Proj_name FROM Project WHERE Proj_year = 2015;
+
+———————————————————————————————————————————————
+7. List the Dept_name having no_of_emp=10 
+
+SELECT d.Dept_name FROM Dept d INNER JOIN Employee e ON d.Dept_id = e.Dept_id GROUP BY d.Dept_name HAVING COUNT(e.Emp_id) >= 10; (Having ke pehle group by Yad rakh bro)
+———————————————————————————————————————————————
+8.Display the total number of employee who have joined any project before 2009 :
+
+SELECT COUNT(DISTINCT e.Emp_id) FROM Employee e INNER JOIN Project p ON e.Dept_id = p.Dept_id WHERE p.Proj_year < 2009; 
+———————————————————————————————————————————————
+9. Create a view showing the employee and Department details. 
+
+CREATE VIEW Emp_Dept_View AS SELECT e.Emp_fname,d.location FROM Employee e INNER JOIN Dept d ON e.Emp_id = d.Dept_id;
+———————————————————————————————————————————————
+10. Perform Manipulation on simple view-Insert, update, delete, drop view.
+
+insert into Emp_Dept_View values('Niranjan','Pune');
+select * from Emp_Dept_View;
+UPDATE Emp_Dept_View SET Emp_fname = 'Niranjan Dangi' WHERE location = 'Pune';
+DROP VIEW Emp_Dept_View; (If possible do 9th and 10th query,otherwise normal join would be okay)
+———————————————————————————————————————————————
